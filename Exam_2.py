@@ -148,18 +148,6 @@ def Test20(t_start, x0, v0, tau, N, k, Q, gamma, omega):
     print('v[' + str(N-1) + '] = {:.8f}'.format(v[-1]) )
 
 
-#For ii) and iii)
-def PlotTrajectory(t_start, x0, v0, tau, N, k, Q, gamma, omega):
-    t, x, v = RungeKutta(getacc_pendulum, N, Q, x0, v0)
-
-    x = ((x+np.pi) % (2*np.pi)) - np.pi
-
-    print('t_tot = ' + str(N-1) + '*tau = ' + str(t[-1]))
-
-    plt.plot(t, x)
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$y$')
-    plt.show()
 
 
 if __name__ == '__main__':
