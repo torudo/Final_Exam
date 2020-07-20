@@ -102,7 +102,7 @@ class Orbit(object):
         """ a = semi-major axis (in AU),
             e = eccentricity """
 
-        self.x0 = a#*(1.0 - e)          # start at x = 0 by definition
+        self.x0 = a*(1.0 - e)          # start at x = 0 by definition
         self.y0 = 0.0  # start at perihelion
 
         self.a = a
@@ -110,9 +110,9 @@ class Orbit(object):
 
         # perihelion velocity (see C&O Eq. 2.33 for ex)
         self.u0 = 0.0
-        #self.v0 = math.sqrt( (GM/a)* (1.0 + e) / (1.0 - e) )
+        self.v0 = math.sqrt( (GM/a)* (1.0 + e) / (1.0 - e) )
         #self.v0 = math.sqrt( (GM/a))
-        self.v0 = np.pi/2
+        #self.v0 = np.pi/2
 
 
     def kepler_period(self):

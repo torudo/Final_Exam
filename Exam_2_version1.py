@@ -6,11 +6,11 @@ from pylab import *
 import matplotlib.pyplot as plt
 
 #Set common figure parameters:
-newparams = {
-     'figure.figsize': (5, 5)}#, 'axes.grid': True,
+#newparams = {
+#     'figure.figsize': (5, 5)}#, 'axes.grid': True,
 #     'lines.linewidth': 1.5, 'font.size': 19, 'lines.markersize' : 10,
 #     'mathtext.fontset': 'stix', 'font.family': 'STIXGeneral'}
-plt.rcParams.update(newparams)
+#plt.rcParams.update(newparams)
 
 
 # Author: Tobias Rudolph
@@ -29,7 +29,7 @@ YR = 1 #2*np.pi* np.sqrt(GM)
 AU = 1
 GM = 4*np.pi**2 *AU**3/YR**2
 
-threshold = 1.e-5 #0.00001
+threshold = 1.e-3 #0.001
 S1 = 0.9
 S2 = 1.3
 
@@ -109,7 +109,7 @@ def RK4_singlestep(X0, V0, t, dt, rhs):
     vnew = v + (dt/6.0)*(l1v + 2.0*l2v + 2.0*l3v + l4v)
     xnew = x + (dt/6.0)*(k1x + 2.0*k2x + 2.0*k3x + k4x)
     ynew = y + (dt/6.0)*(k1y + 2.0*k2y + 2.0*k3y + k4y)
-    return [xnew, ynew], [unew, vnew], 1, 1
+    return [xnew, ynew], [unew, vnew], 1
 
 
 def help_taucalc(tau, epsilon, delta):
@@ -125,7 +125,7 @@ class Orbit(object):
         v = velocitiy
         time =
     """
-    def __init__(self, r0 = 1, v0 = np.sqrt(GM), tmax = 0.37, tau = 0.01):
+    def __init__(self, r0 = 1, v0 = np.sqrt(GM), tmax = 1, tau = 0.1):
         self.tmax = tmax
         self.dt = tau
         self.err = threshold
@@ -136,27 +136,19 @@ class Orbit(object):
         self.r = np.array([np.zeros(2)])
         self.v = np.array([np.zeros(2)])
         self.t = np.array([np.zeros(1)])
-        self.E = np.zeros(1)
 
-        self.r[0] = r0 # vectors
-        self.v[0] = v0 # vectors
+        # Initialisation
+        self.r[0] = r0
+        self.v[0] = v0
 
-        self.E[0] = 0.5*(norm(self.v[0])**2) - GM/norm(self.r[0])
 
     def rhs(self, X, V):
-        # current radius
         r = math.sqrt(X[0]**2 + X[1]**2)
-        #print(r)
-        # position
         xdot = V[0]
         ydot = V[1]
-
-        # velocity
         udot = -GM*X[0]/r**3
         vdot = -GM*X[1]/r**3
-
         return xdot, ydot, udot, vdot
-
 
 
     def RKStep2(self, r, v, t, dt, acc, E):
@@ -233,8 +225,6 @@ class Orbit(object):
         return [x_new,y_new], [u_new,v_new], t_new, E_new
 
 
-
-
     def RungeKutta(self, n, r, v, t, dt, acc, E):
         #t = 0.0
         #ResultsStep = []
@@ -250,55 +240,38 @@ class Orbit(object):
             self.E = np.append(self.E , ResultsStep[3])
         return r, v, t, E
 
-
     def RungeKutta_adaptive(self, dt, err, tmax):
+        #start values
         r = self.r[0]
         v = self.v[0]
         t = 0.0
-        E = self.E[0]
-
-        err = threshold
         dt_new = dt
         n_reset = 0
 
         while t < tmax:
-            #print(t)
-            #print(dt)
-            if err > 0.0:
+            if self.err > 0.0:
                 rel_error = 1.e10
                 n_try = 0
-                while rel_error > err:
+                while rel_error > self.err:
                     dt = dt_new
-                    #print(dt)
-                    #print(err)
-                    #print(rel_error)
                     if t+dt > tmax:
                         dt = tmax-t
-                    #print("R",r,v)
-                    rtemp, vtemp, ttemp, Etemp =\
+                    # Running two half steps
+                    rtemp, vtemp, ttemp =\
                         RK4_singlestep(r, v, t, 0.5*dt, self.rhs)#, E)
-                        #self.RKStep(r, v, t, 0.5*dt, acc, E)
-                    rnew, vnew, tnew, Enew =\
+
+                    rnew, vnew, tnew =\
                         RK4_singlestep(rtemp, vtemp, ttemp, 0.5*dt, self.rhs)#, Etemp)
-                        #self.RKStep(rtemp, vtemp, ttemp, 0.5*dt, acc, Etemp)
-
-                    rsingstep, vsingstep, tsingstep, Esingstep =\
+                    # single step to compare with
+                    rsingstep, vsingstep, tsingstep =\
                         RK4_singlestep(r, v, t, dt, self.rhs)#, E)
-                        #self.RKStep(r, v, t, dt, acc, E)
-                    #print(rnew-rsingstep)
-                    # Checken ob max auch beim arry funktioniert
-                    # also dimensionen checken, sonst r[][0] etc..
-                    #print(np.abs((rnew-rsingstep)/rnew))
-
+                    # New error
                     rel_error = max(np.abs((rnew[0]-rsingstep[0])/rnew[0]),
                                     np.abs((rnew[1]-rsingstep[1])/rnew[1]),
                                     np.abs((vnew[0]-vsingstep[0])/vnew[0]),
                                     np.abs((vnew[1]-vsingstep[1])/vnew[1]))
-                    #print(rel_error)
-                    #                abs((unew-rsingstep)/unew),
-                    #                abs((vnew-rsingstep)/vnew))
-                    #print(rnew)
-                    dt_est = dt*abs(err/rel_error)**0.2
+
+                    dt_est = dt*abs(self.err/rel_error)**(1./5.)
                     dt_new = min(max(S1*dt_est, dt/S2), S2*dt)
                     n_try += 1
                 if n_try > 1:
@@ -307,25 +280,18 @@ class Orbit(object):
             else:
                 if t + dt > tmax:
                     dt = tmax-t
-                rnew, vnew, tnew, E_new =\
+                rnew, vnew, tnew =\
                     RK4_singlestep(r, v, t, dt, self.rhs)#, E)
-                    #self.RKStep(r, v, t, dt, acc, E)
-            # successful step
+            # Finally we made a step            
             t += dt
 
             self.r = np.append(self.r ,[rnew] ,axis= 0)
             self.v = np.append(self.v ,[vnew] ,axis= 0)
             self.t = np.append(self.t ,t)
-            self.E = np.append(self.E ,Enew )
 
-            #r[i+1], v[i+1], t[i+1], E[i] = self.RKStep(i, n, r[i], v[i], t[i], dt, acc, E[i])
-            #RKStep(i,n,r, v, t, dt/2, acc, E)
-            #RKStep(i,n,r, v, t, dt/2, acc, E)
             r = rnew; v = vnew
         print("resets",n_reset)
-        return r, v, t, E
-
-
+        return r, v, t
 
     def RungeKutta_adaptive_2(self, dt, err, tmax):
         r = self.r[0]
@@ -400,8 +366,6 @@ class Orbit(object):
         print("resets",n_reset)
         return r, v, t, E
 
-
-
     def PlotSystem(self,x=0,y=0):
         ax = plt.gca()
         ax.cla()
@@ -421,7 +385,6 @@ class Orbit(object):
 
         #filename = "Pulse_first_case{0:.3}.pdf".format(omega)
         #plt.savefig(filename, bbox_inches='tight')
-
         plt.draw()
 
     def PlotOrbit(self,x,y):
@@ -430,8 +393,11 @@ class Orbit(object):
         plt.plot(x[-1],y[-1],'o',color='blue', markersize=3)
         #plt.plot(x[2299],y[2299],'o',color='blue', markersize=3)
 
-
     def EnergyPlot(self):
+        self.E = np.ones(len(self.r))
+        for i in range(0,len(self.r)):
+            self.E[i] = 0.5*(norm(self.v[i])**2) - GM/norm(self.r[i])
+
         plt.figure()
         plt.title('Energy per unit mass')
         plt.ylabel(r"E / $\mathrm{E}_0$")
@@ -439,22 +405,15 @@ class Orbit(object):
         plt.grid()
         # for i,value in enumerate(r):
         #     E[i] = 0.5*(norm(v[i])**2) - C/norm(value)
-        plot(self.t, self.E/self.E[0])
-        show()
+        plt.plot(self.t, self.E/self.E[0])
+        #plt.plot(self.t, self.E)
+        #plt.plot(np.linspace(0,len(self.r)-1,len(self.r)), self.E, '.')
+
+        #plt.ylim(0.999999,1.000002)
+        plt.draw()
 
     def CalcExcentricity(self, r):
-        #x_max = max(self.r[:,0])
-        #y_max = max(self.r[:,1])
-        #x_min = min(self.r[:,0])
-        #y_min = min(self.r[:,1])
-        #print(  x_max,
-        #        y_max,
-        #        x_min,
-        #        y_min)
-        #e = (x_max-x_min)/(x_max+x_min)
-        #print("eccentricity is: {0:2.2f}".format(e))
-        #e = np.sqrt(1 - y_max**2/x_max**2)
-        #print("eccentricity is: {0:2.2f}".format(e))
+        """Calculates Eccentricitie follwing the geometric properties """
         norm_list = []
         for i in range(len(self.r)):
             norm_list.append(norm(self.r[i]))
@@ -464,26 +423,24 @@ class Orbit(object):
         print("Eccentricity ala rmaxmin: {0:2.3f}".format(e))
 
     def Calc_Extentricity_Vector(self, r0 , v0):
+        # appending a 3. dimension for the cross product
         r = np.append(r0,0)
         v = np.append(v0,0)
-        #print(r)
         L = np.cross(r,v)
         e_vec = (np.cross(v, L))/GM - r/ norm(r)
         e = norm(e_vec)
         print("Another way e = {0:.3f}".format(e))
 
-
+#
     def displacement(self, r):
         #indexx = abs(r[1: ,1] - 0.).argmin()
         shift = 1
         indexx = abs(r[shift: ,1] - 0.).argmin() + shift
         #print("Das Listenelement mit der geringsten Abweichung ist:",r[:,1].flatten()[indexx],"Listenindex:",indexx)
-
         print("\nSmall offset indicates closed orbit")
         print("Offset in 'x': %0.3e - %0.9e = %0.7e" % (r[0,0],r[indexx,0], r[indexx,0]-r[0,0]))
         print("Offset in 'y': %0.3e - %0.9e = %0.7e" % (r[0,1],r[indexx,1], r[indexx,1]-r[0,1]))
         print("Total offset: %0.3e" % np.sqrt( (r[0,0]-r[indexx,0])**2 + (r[0,1]-r[indexx,1])**2) )
-
         #r_perihelion = abs(min(r[:,0]))
         #print("\nThe perihelion seperation is %0.3f, compared to 0.967." % r_perihelion)
 
@@ -513,43 +470,69 @@ def main():
         'test' : 2,
         'testa' : 100
     }
-    e = 0
-    v0mag =  2.2*np.pi/2 * AU/YR
-    r0mag = 1*(1-e)
+    ############### First Orbit
+    v0mag = np.pi/2 * AU/YR
+    r0mag = 1
     #v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
     r0 = r0mag*array([1,0])
     v0 = v0mag*array([0,1])
-    t = 0.37
-    newOrbit = Orbit(r0, v0, 1)
+    t = 0.3
+    #t = 0.37
+    newOrbit = Orbit(r0, v0, t)
     newOrbit.RungeKutta_adaptive(newOrbit.dt, newOrbit.err, newOrbit.tmax)
-    print("nr of steps",len(newOrbit.r)-1)
+    #print("nr of steps",len(newOrbit.r)-1)
 
+    ############### Second Orbit
+    v0mag = 1.3*np.pi/2 * AU/YR
+    r0mag = 1
+    #v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
+    r0 = r0mag*array([1,0])
+    v0 = v0mag*array([0,1])
+    #t = 0.37
+    newOrbit2 = Orbit(r0, v0, t)
+    newOrbit2.RungeKutta_adaptive(newOrbit2.dt, newOrbit2.err, newOrbit2.tmax)
+    #print("nr of steps",len(newOrbit.r)-1)
+
+    ############### First Orbit
+    v0mag = 2.*np.pi/2 * AU/YR
+    r0mag = 1
+    #v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
+    r0 = r0mag*array([1,0])
+    v0 = v0mag*array([0,1])
+    #t = 0.43
+    newOrbit3 = Orbit(r0, v0, t)
+    newOrbit3.RungeKutta_adaptive(newOrbit3.dt, newOrbit3.err, newOrbit3.tmax)
+    #print("nr of steps",len(newOrbit.r)-1)
+
+
+    '''    # Controll  Orbit
     e = 0.75
     e = 0
     r0mag = 1*(1+e)
     v0mag =  np.sqrt(GM/1* (1-e)/(1+e))
     r0 = r0mag*array([1,0])
     v0 = v0mag*array([0,1])
-
     newOrbit_Ellips = Orbit(r0, v0, 1)
     newOrbit_Ellips.RungeKutta_adaptive(newOrbit_Ellips.dt, newOrbit_Ellips.err, newOrbit_Ellips.tmax)
-    #newOrbit2.RungeKutta(newOrbit2.n, newOrbit2.r, newOrbit2.v, newOrbit2.t, newOrbit2.dt, acc, newOrbit2.E)[0]
-    #newOrbit2.RungeKutta_adaptive_2(newOrbit.dt, newOrbit.err, newOrbit.tmax)[0]
-    #newOrbit.CalcExcentricity()
+    '''
+
+    newOrbit.PlotSystem()
+    newOrbit.PlotOrbit(newOrbit.r[:,0],newOrbit.r[:,1])
+    newOrbit2.PlotOrbit(newOrbit2.r[:,0],newOrbit2.r[:,1])
+    newOrbit3.PlotOrbit(newOrbit3.r[:,0],newOrbit3.r[:,1])
+    #newOrbit_Ellips.PlotOrbit(newOrbit_Ellips.r[:,0],newOrbit_Ellips.r[:,1])
+
+    plt.show()
+
 
     # For the Excentisity !
     newOrbit.Calc_Extentricity_Vector(newOrbit.r[-2],newOrbit.v[-2])
     #newOrbit.displacement(newOrbit.r)
     newOrbit.CalcExcentricity(newOrbit.r)
+
     #Energie
-    #newOrbit.EnergyPlot()
+    newOrbit.EnergyPlot()
     #newOrbit2.EnergyPlot()
-
-    newOrbit.PlotSystem()
-    newOrbit.PlotOrbit(newOrbit.r[:,0],newOrbit.r[:,1])
-    newOrbit_Ellips.PlotOrbit(newOrbit_Ellips.r[:,0],newOrbit_Ellips.r[:,1])
     plt.show()
-
-
 
 main()

@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 from orbit_adaptive import *
 
 # circular orbit
-o = Orbit(1, 0.95)  # a, e
+o = Orbit(1, 0)  # a, e
 
 # period
 P = o.kepler_period()
-P = 0.37
+#P = 0.37
 
 err = 1.e-7
 dt_init = 0.01
@@ -49,8 +49,8 @@ plt.xlabel(r"t")
 ax = plt.gca()
 ax.ticklabel_format(useOffset=False)
 
-plt.savefig("energy-rk4-adaptive.png")
-
+#plt.savefig("energy-rk4-adaptive.png")
+plt.show()
 
 # plot the timesteps
 plt.clf()
