@@ -6,93 +6,50 @@ from pylab import *
 import matplotlib.pyplot as plt
 
 # Author: Tobias Rudolph
-# Date: 10.07.2020
+# Date: 17.07.2020
 
-
-
-
-# #Global variables:
-# AU = 1
-# YR = 1
-# GM = 4*np.pi**2 *AU**3/YR**2
-# v0 = np.pi/2 *AU/YR #tangentialgesch.
-#
-# tau = 0.1* YR
-# threshold = 0.001
-# S_1 = 0.9
-# S_2 = 1.3
-#
-# #time = 60*60*24*365*5 ## s
-# time = 10 ## s
-# dt = 0.01 # s
-#
-# # Initial conditions
-# #R0mag = a*(1-e)
-#
-# R0mag = 1
-# v0mag = np.pi/2 *AU/YR
-# r0 = R0mag*array([0,1])
-# v0 = v0mag*array([1,0])
-#
-# # Setup Simulation
-# n = int(ceil(time/dt))
-# r = zeros((n,2),float)
-# v = zeros((n,2),float)
-# t = zeros((n,1),float)
-# r[0] = r0 # vectors
-# v[0] = v0 # vectors
-
+#other constants
 T = 365.25*24*3600  # Orbital period [s]
 R = 152.10e9        # Aphelion distance [m]
 G = 6.673e-11       # Gravitational constant [N (m/kg)^2]
 M = 1.9891e30       # Solar mass [kg]
 m = 5.9726e24       # Earth mass [kg]
-C = (G*M*T**2)/(R**3)
-print(C)
-print(G*M,4*np.pi**2 *R**3/T**2 )
-YR = 1
+
+YR = 1 #2*np.pi* np.sqrt(GM)
 AU = 1
 GM = 4*np.pi**2 *AU**3/YR**2
+e = 0.9
 
-#a = (GM* YR**2 / 4*np.pi**2 )**(1./3.)
-#a = 1.0
-#e = 0.95
-#e = 0
-#r0mag = a*(1-e)
-#v0mag = -sqrt(GM/a * (1+e)/(1-e) )
+r0mag = 1*(1-e)
+v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
+#v0mag =  3*np.pi/2 * AU/YR
 
-r0mag = 1
-v0mag =  29.29e3*T/R
-#v0mag =  pi/2. * AU/YR
-
-print(v0mag)
 r0 = r0mag*array([1,0])
 v0 = v0mag*array([0,1])
 
-# Numerical values
-#time = 60*60*24*365*5 ## s
-time = 1 ## s
-dt = 0.0001
+time = 10 ## s
+dt = 0.0005
+#dt = 0.05
 # Setup Simulation
-n = int(ceil(time/dt))
+n = int(ceil(time/dt)) + 1 #+5000
 print(n)
 
 r = zeros((n,2),float)
 v = zeros((n,2),float)
 t = zeros((n,1),float)
 
-E = np.zeros(n)  # Total energy/mass
 r[0] = r0 # vectors
 v[0] = v0 # vectors
 
+C = 1
+
+E = np.zeros(n)  # Total energy/mass
 E[0] = 0.5*(norm(v[0])**2) - C/norm(r[0])
 E_0 = 0.5*(norm(v[0])**2) - C/norm(r[0])
 
 
-
 def acc(r, rr):
     return -GM*r/rr**3
-
 
 def RungeKutta_secondtry(n,r, v, t, acc, E):
     for i in range(0, n-1):
@@ -111,7 +68,7 @@ def RungeKutta_secondtry(n,r, v, t, acc, E):
 
         t[i+1] = t[i] + dt
         E[i] = 0.5*(norm(v[i+1])**2) - C/norm(r[i+1])
-        print(E[i])
+        #print(E[i])
     return t, r, v, E
 
 
@@ -134,16 +91,6 @@ def RungeKutta_update(n, r, v):
     return t, r, v
 
 
-def update(n,r,v):
-    for i in range(n-1):
-        rr = norm(r[i,:])
-        a = -GM*r[i]/rr**3
-
-        v[i+1] = v[i] + dt*a
-        r[i+1] = r[i] + dt*v[i+1]
-        t[i+1] = t[i] + dt
-        #print(r)
-
 def PlotTrajectory(x,y):
     ax = plt.gca()
     ax.cla()
@@ -158,17 +105,41 @@ def PlotTrajectory(x,y):
     #ylim(-axs,axs)
 
 def main():
+
+
     #update(n,r,v)
-    RungeKutta_update(n,r,v)
-    #RungeKutta_secondtry(n,r,v,t,acc,E)
+    #RungeKutta_update(n,r,v)
+    RungeKutta_secondtry(n,r,v,t,acc,E)
     PlotTrajectory(r[:,0],r[:,1])
     #plt.show()
     #print(r)
 
+    if(time==1):
+        # Find offset
+        print("\nSmall offset indicates closed orbit")
+        print("Offset in 'x': %0.3e - %0.9e = %0.7e" % (r[0,0],r[-1,0], r[-1,0]-r[0,0]))
+        print("Offset in 'y': %0.3e - %0.9e = %0.7e" % (r[0,1],r[-1,1], r[-1,1]-r[0,1]))
+        print("Total offset: %0.3e" % np.sqrt( (r[0,0]-r[-1,0])**2 + (r[0,1]-r[-1,1])**2) )
+
+        # Find perihelion seperation:
+        r_perihelion = abs(min(r[:,0]))
+        print("\nThe perihelion seperation is %0.3f, compared to 0.967." % r_perihelion)
+
+    draw()
+
+    plt.figure()
+    plt.title('Energy per unit mass')
+
+    plt.ylabel("Energy")
+    plt.xlabel(r"$n$")
+    plt.grid()
     for i,value in enumerate(r):
         E[i] = 0.5*(norm(v[i])**2) - C/norm(value)
     #print(E)
     plot(t,E/E_0)
     show()
+
+
+
 
 main()

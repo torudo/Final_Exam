@@ -13,16 +13,16 @@ from pylab import *
 #AU = 149597870700 #m
 #YR =
 GM = 4*np.pi**2 #*AU**3/YR**2
-v0mag = pi/2.
+v0mag = np.sqrt(GM/1)#pi/2.
 
 r0 = array([0,1])
 v0 = -v0mag*array([1,0])
 # Numerical values
 #time = 60*60*24*365*5 ## s
 time = 1 ## s
-dt = 0.005 # s
+dt = 0.001 # s
 # Setup Simulation
-n = int(ceil(time/dt))
+n = int(ceil(time/dt))+1
 r = zeros((n,2),float)
 v = zeros((n,2),float)
 t = zeros((n,1),float)
