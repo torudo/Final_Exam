@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 # Author: Tobias Rudolph
 # Date: 17.07.2020
 
-
 #Global Constants:
 T = 365.25*24*3600  # Orbital period [s]
 R = 152.10e9        # Aphelion distance [m]
@@ -30,101 +29,76 @@ AU = 1
 GM = 4*np.pi**2 *AU**3/YR**2
 
 threshold = 1.e-3 #0.001
+#threshold = 1.e-7 #0.001
 S1 = 0.9
 S2 = 1.3
 
-#Alte version vom Zettel
-def RKStep(i, n, r, v, t, dt, acc, E):
-    rr = norm(r[i,:])
-    k1v = acc(r[i], rr)                         #use RK4 method
-    k1r = v[i]
-    k2v = acc(r[i] + (dt/2) * k1r, rr)
-    k2r = v[i] + (dt/2) * k1v
-    k3v = acc(r[i] + (dt/2) * k2r, rr)
-    k3r =     v[i] + (dt/2) * k2v
-    k4v = acc(r[i] +  dt    * k3r, rr)
-    k4r = v[i] + dt * k3v
 
-    r[i+1] = r[i] + dt/6.*(k1r + 2*k2r + 2*k3r + k4r)
-    v[i+1] = v[i] + dt/6.*(k1v + 2*k2v + 2*k3v + k4v)
+## Zwischenspeicher version
+#def RK4_singlestep2(X0, V0, t, dt, rhs):
+    # x = X0[0]
+    # y = X0[1]
+    # u = V0[0]
+    # v = V0[1]
+    #
+    # # get the RHS at several points
+    # k1x, k1y, l1u, l1v = rhs([x,y], [u,v])
+    #
+    # k2x, k2y, l2u, l2v = \
+    #     rhs([x+0.5*dt*k1x,y+0.5*dt*k1y],
+    #         [u+0.5*dt*l1u,v+0.5*dt*l1v])
+    #
+    # k3x, k3y, l3u, l3v = \
+    #     rhs([x+0.5*dt*k2x,y+0.5*dt*k2y],
+    #         [u+0.5*dt*l2u,v+0.5*dt*l2v])
+    #
+    # k4x, k4y, l4u, l4v = \
+    #     rhs([x+dt*k3x,y+dt*k3y],
+    #         [u+dt*l3u,v+dt*l3v])
+    #
+    # # advance
+    # unew = u + (dt/6.0)*(l1u + 2.0*l2u + 2.0*l3u + l4u)
+    # vnew = v + (dt/6.0)*(l1v + 2.0*l2v + 2.0*l3v + l4v)
+    #
+    # xnew = x + (dt/6.0)*(k1x + 2.0*k2x + 2.0*k3x + k4x)
+    # ynew = y + (dt/6.0)*(k1y + 2.0*k2y + 2.0*k3y + k4y)
+    #
+    # return [xnew, ynew], [unew, vnew], 1, 1
+## Am liebsten in Vektor schreibweise umändern
+#def RK4_singlestep(X0, V0, t, dt, rhs):
+    # x = X0[0]
+    # y = X0[1]
+    # u = V0[0]
+    # v = V0[1]
+    #
+    # k1x, k1y, l1u, l1v = rhs([x,y], [u,v])
+    #
+    # k2x, k2y, l2u, l2v = \
+    #     rhs([x+0.5*dt*k1x,y+0.5*dt*k1y],
+    #         [u+0.5*dt*l1u,v+0.5*dt*l1v])
+    #
+    # k3x, k3y, l3u, l3v = \
+    #     rhs([x+0.5*dt*k2x,y+0.5*dt*k2y],
+    #         [u+0.5*dt*l2u,v+0.5*dt*l2v])
+    #
+    # k4x, k4y, l4u, l4v = \
+    #     rhs([x+dt*k3x,y+dt*k3y],
+    #         [u+dt*l3u,v+dt*l3v])
+    # unew = u + (dt/6.0)*(l1u + 2.0*l2u + 2.0*l3u + l4u)
+    # vnew = v + (dt/6.0)*(l1v + 2.0*l2v + 2.0*l3v + l4v)
+    # xnew = x + (dt/6.0)*(k1x + 2.0*k2x + 2.0*k3x + k4x)
+    # ynew = y + (dt/6.0)*(k1y + 2.0*k2y + 2.0*k3y + k4y)
+    # return [xnew, ynew], [unew, vnew], 1
 
-    t[i+1] = t[i] + dt
-    E[i] = 0.5*(norm(v[i+1])**2) - C/norm(r[i+1])
-    #print(E[i])
-    #delta = abs(x_step - dh_step_x) /( 0.5*(abs(x_step) + abs(dh_step_x)) )
-    epsilon_rel = fabs( )
-    return t, r, v, E
-# Zwischenspeicher version
-def RK4_singlestep2(X0, V0, t, dt, rhs):
-    x = X0[0]
-    y = X0[1]
-    u = V0[0]
-    v = V0[1]
-
-    # get the RHS at several points
-    k1x, k1y, l1u, l1v = rhs([x,y], [u,v])
-
-    k2x, k2y, l2u, l2v = \
-        rhs([x+0.5*dt*k1x,y+0.5*dt*k1y],
-            [u+0.5*dt*l1u,v+0.5*dt*l1v])
-
-    k3x, k3y, l3u, l3v = \
-        rhs([x+0.5*dt*k2x,y+0.5*dt*k2y],
-            [u+0.5*dt*l2u,v+0.5*dt*l2v])
-
-    k4x, k4y, l4u, l4v = \
-        rhs([x+dt*k3x,y+dt*k3y],
-            [u+dt*l3u,v+dt*l3v])
-
-    # advance
-    unew = u + (dt/6.0)*(l1u + 2.0*l2u + 2.0*l3u + l4u)
-    vnew = v + (dt/6.0)*(l1v + 2.0*l2v + 2.0*l3v + l4v)
-
-    xnew = x + (dt/6.0)*(k1x + 2.0*k2x + 2.0*k3x + k4x)
-    ynew = y + (dt/6.0)*(k1y + 2.0*k2y + 2.0*k3y + k4y)
-
-    return [xnew, ynew], [unew, vnew], 1, 1
-
-# Am liebsten in Vektor schreibweise umändern
-def RK4_singlestep(X0, V0, t, dt, rhs):
-    x = X0[0]
-    y = X0[1]
-    u = V0[0]
-    v = V0[1]
-
-    k1x, k1y, l1u, l1v = rhs([x,y], [u,v])
-
-    k2x, k2y, l2u, l2v = \
-        rhs([x+0.5*dt*k1x,y+0.5*dt*k1y],
-            [u+0.5*dt*l1u,v+0.5*dt*l1v])
-
-    k3x, k3y, l3u, l3v = \
-        rhs([x+0.5*dt*k2x,y+0.5*dt*k2y],
-            [u+0.5*dt*l2u,v+0.5*dt*l2v])
-
-    k4x, k4y, l4u, l4v = \
-        rhs([x+dt*k3x,y+dt*k3y],
-            [u+dt*l3u,v+dt*l3v])
-    unew = u + (dt/6.0)*(l1u + 2.0*l2u + 2.0*l3u + l4u)
-    vnew = v + (dt/6.0)*(l1v + 2.0*l2v + 2.0*l3v + l4v)
-    xnew = x + (dt/6.0)*(k1x + 2.0*k2x + 2.0*k3x + k4x)
-    ynew = y + (dt/6.0)*(k1y + 2.0*k2y + 2.0*k3y + k4y)
-    return [xnew, ynew], [unew, vnew], 1
-
-
-def help_taucalc(tau, epsilon, delta):
-    return tau * (epsilon/delta)**(1./5.)
-
-# def acc(r, rr):
-#     return -GM*r / rr**3
-
+# def help_taucalc(tau, epsilon, delta):
+#     return tau * (epsilon/delta)**(1./5.)
 
 class Orbit(object):
     """ Orbit object which holds the information about:
         r = position
         v = velocitiy
-        time =
     """
+
     def __init__(self, r0 = 1, v0 = np.sqrt(GM), tmax = 1, tau = 0.1):
         self.tmax = tmax
         self.dt = tau
@@ -141,90 +115,38 @@ class Orbit(object):
         self.r[0] = r0
         self.v[0] = v0
 
+        # container for SMaxis and eccentricity
+        self.a = 0
+        self.e = 0
 
-    def rhs(self, X, V):
-        r = math.sqrt(X[0]**2 + X[1]**2)
-        xdot = V[0]
-        ydot = V[1]
-        udot = -GM*X[0]/r**3
-        vdot = -GM*X[1]/r**3
-        return xdot, ydot, udot, vdot
-
-
-    def RKStep2(self, r, v, t, dt, acc, E):
-        #rr = norm(r)
+    def acc_vec(self, r):
         rr = math.sqrt(r[0]**2 + r[1]**2)
-        #print(rr)
-        k1v = acc(r, rr)                         #use RK4 method
-        k1r = v
+        return -GM*r / rr**3
 
-        k2v = acc(r + (dt/2) * k1r, rr)
-        k2r = v + (dt/2) * k1v
+    def RKStep_vec(self, r0, v0, t, dt, acc):
+        r = r0
+        v = v0
 
-        k3v = acc(r + (dt/2) * k2r, rr)
-        k3r = v + (dt/2) * k2v
+        k1 = dt*v
+        l1 = dt*self.acc_vec(r)
 
-        k4v = acc(r +  dt    * k3r, rr)
-        k4r = v + dt * k3v
+        k2 = dt*(v + l1/2.)
+        l2 = dt*self.acc_vec(r + k1/2.)
 
-        r_new = r + dt/6.*(k1r + 2*k2r + 2*k3r + k4r)
-        v_new = v + dt/6.*(k1v + 2*k2v + 2*k3v + k4v)
+        k3 = dt*(v + l2/2.)
+        l3 = dt*self.acc_vec(r + k2/2.)
+
+        k4 = dt*(v + l3)
+        l4 = dt*self.acc_vec(r + k3)
+
+        r_new = r + 1/6.*(k1 + 2*k2 + 2*k3 + k4)
+        v_new = v + 1/6.*(l1 + 2*l2 + 2*l3 + l4)
 
         t_new = t + dt
-        E_new = 0.5*(norm(v_new)**2) - GM/norm(r_new)
-
-        #print(E[i])
-        #delta = abs(x_step - dh_step_x) /( 0.5*(abs(x_step) + abs(dh_step_x)) )
-    #    epsilon_rel = fabs( )
-        return r_new, v_new, t_new, E_new
+        return r_new, v_new, t_new
 
 
-    def RKStep(self, r, v, t, dt, acc, E):
-        #rr = norm(r)
-        rr = math.sqrt(r[0]**2 + r[1]**2)
-        #print(rr)
-        x = r[0]
-        y = r[1]
-        u = v[0]
-        v = v[1]
-
-        k1x = dt*u
-        k1y = dt*v
-        l1u = dt*acc(x, rr)                         #use RK4 method
-        l1v = dt*acc(y, rr)                         #use RK4 method
-
-        k2x = dt*(u + l1u/2.)
-        k2y = dt*(v + l1v/2.)
-        l2u = dt*acc(x + k1x/2., rr)
-        l2v = dt*acc(y + k1y/2., rr)
-
-        k3x = dt*(u + l2u/2.)
-        k3y = dt*(v + l2v/2.)
-        l3u = dt*acc(x + k2x/2., rr)
-        l3v = dt*acc(y + k2y/2., rr)
-
-        k4x = dt*(u + l3u)
-        k4y = dt*(v + l3v)
-        l4u = dt*acc(x + k3x, rr)
-        l4v = dt*acc(y + k3y, rr)
-
-
-        x_new = x + 1/6.*(k1x + 2*k2x + 2*k3x + k4x)
-        y_new = y + 1/6.*(k1y + 2*k2y + 2*k3y + k4y)
-        u_new = u + 1/6.*(l1u + 2*l2u + 2*l3u + l4u)
-        v_new = v + 1/6.*(l1v + 2*l2v + 2*l3v + l4v)
-
-        t_new = t + dt
-        E_new = 0#0.5*(norm(u_new)**2) - GM/norm(x_new)
-
-
-        #print(E[i])
-        #delta = abs(x_step - dh_step_x) /( 0.5*(abs(x_step) + abs(dh_step_x)) )
-    #    epsilon_rel = fabs( )
-        #return r_new, v_new, t_new, E_new
-        return [x_new,y_new], [u_new,v_new], t_new, E_new
-
-
+# NOt adaptive version of the RK
     def RungeKutta(self, n, r, v, t, dt, acc, E):
         #t = 0.0
         #ResultsStep = []
@@ -233,15 +155,14 @@ class Orbit(object):
 
             #r[i+1], v[i+1], t[i+1], E[i] = self.RKStep(i, n, r[i], v[i], t[i], dt, acc, E[i])
 
-            ResultsStep = self.RKStep(self.r[i], self.v[i], self.t[i], dt, acc, self.E[i])
+            ResultsStep = self.RKStep(self.r[i], self.v[i], self.t[i], dt, acc, E)
             self.r = np.append(self.r , [ResultsStep[0]] ,axis= 0)
             self.v = np.append(self.v , [ResultsStep[1]] ,axis= 0)
             self.t = np.append(self.t , [ResultsStep[2]] ,axis= 0)
-            self.E = np.append(self.E , ResultsStep[3])
+            self.E = np.append(E , ResultsStep[3])
         return r, v, t, E
 
     def RungeKutta_adaptive(self, dt, err, tmax):
-        #start values
         r = self.r[0]
         v = self.v[0]
         t = 0.0
@@ -258,18 +179,17 @@ class Orbit(object):
                         dt = tmax-t
                     # Running two half steps
                     rtemp, vtemp, ttemp =\
-                        RK4_singlestep(r, v, t, 0.5*dt, self.rhs)#, E)
-
+                        self.RKStep_vec(r, v, t, 0.5*dt, self.acc_vec)
                     rnew, vnew, tnew =\
-                        RK4_singlestep(rtemp, vtemp, ttemp, 0.5*dt, self.rhs)#, Etemp)
+                        self.RKStep_vec(rtemp, vtemp, ttemp, 0.5*dt, self.acc_vec)
                     # single step to compare with
                     rsingstep, vsingstep, tsingstep =\
-                        RK4_singlestep(r, v, t, dt, self.rhs)#, E)
+                        self.RKStep_vec(r, v, t, dt, self.acc_vec)
                     # New error
                     rel_error = max(np.abs((rnew[0]-rsingstep[0])/rnew[0]),
                                     np.abs((rnew[1]-rsingstep[1])/rnew[1]),
                                     np.abs((vnew[0]-vsingstep[0])/vnew[0]),
-                                    np.abs((vnew[1]-vsingstep[1])/vnew[1]))
+                                                np.abs((vnew[1]-vsingstep[1])/vnew[1]))
 
                     dt_est = dt*abs(self.err/rel_error)**(1./5.)
                     dt_new = min(max(S1*dt_est, dt/S2), S2*dt)
@@ -281,8 +201,8 @@ class Orbit(object):
                 if t + dt > tmax:
                     dt = tmax-t
                 rnew, vnew, tnew =\
-                    RK4_singlestep(r, v, t, dt, self.rhs)#, E)
-            # Finally we made a step            
+                    self.RKStep_vec(r, v, t, dt, self.acc)
+            # successful step
             t += dt
 
             self.r = np.append(self.r ,[rnew] ,axis= 0)
@@ -293,78 +213,9 @@ class Orbit(object):
         print("resets",n_reset)
         return r, v, t
 
-    def RungeKutta_adaptive_2(self, dt, err, tmax):
-        r = self.r[0]
-        v = self.v[0]
-        t = 0.0
-        E = self.E[0]
 
-        err = threshold
-        dt_new = dt
-        n_reset = 0
-
-        while t < tmax:
-            #print(t)
-            #print(dt)
-            if err > 0.0:
-                rel_error = 1.e10
-                n_try = 0
-                while rel_error > err:
-                    dt = dt_new
-                    #print(dt)
-                    #print(err)
-                    #print(rel_error)
-                    if t+dt > tmax:
-                        dt = tmax-t
-                    #print("R",r,v)
-                    rtemp, vtemp, ttemp, Etemp =\
-                        self.RKStep(r, v, t, 0.5*dt, acc, E)
-                    print("test",rtemp)
-                    #print("test",rtemp)
-                    rnew, vnew, tnew, Enew =\
-                        self.RKStep(rtemp, vtemp, ttemp, 0.5*dt, acc, Etemp)
-
-                    print("NEWest",rnew)
-                    rsingstep, vsingstep, tsingstep, Esingstep =\
-                        self.RKStep(r, v, t, dt, acc, E)
-                    #print(rnew-rsingstep)
-                    # Checken ob max auch beim arry funktioniert
-                    # also dimensionen checken, sonst r[][0] etc..
-                    #print(np.abs((rnew-rsingstep)/rnew))
-
-                    rel_error = max(np.abs((rnew[0]-rsingstep[0])/rnew[0]),
-                                    np.abs((rnew[1]-rsingstep[1])/rnew[1]),
-                                    np.abs((vnew[0]-vsingstep[0])/vnew[0]),
-                                    np.abs((vnew[1]-vsingstep[1])/vnew[1]))
-                    #print(rel_error)
-                    #                abs((unew-rsingstep)/unew),
-                    #                abs((vnew-rsingstep)/vnew))
-                    #print(rnew)
-                    dt_est = dt*abs(err/rel_error)**0.2
-                    dt_new = min(max(S1*dt_est, dt/S2), S2*dt)
-                    n_try += 1
-                if n_try > 1:
-                    # n_try = 1 if we took only a single try at the step
-                    n_reset += (n_try-1)
-            else:
-                if t + dt > tmax:
-                    dt = tmax-t
-                rnew, vnew, tnew, E_new =\
-                    self.RKStep(r, v, t, dt, acc, E)
-            # successful step
-            t += dt
-
-            self.r = np.append(self.r ,[rnew] ,axis= 0)
-            self.v = np.append(self.v ,[vnew] ,axis= 0)
-            self.t = np.append(self.t ,t)
-            self.E = np.append(self.E ,Enew )
-
-            #r[i+1], v[i+1], t[i+1], E[i] = self.RKStep(i, n, r[i], v[i], t[i], dt, acc, E[i])
-            #RKStep(i,n,r, v, t, dt/2, acc, E)
-            #RKStep(i,n,r, v, t, dt/2, acc, E)
-            r = rnew; v = vnew
-        print("resets",n_reset)
-        return r, v, t, E
+####################################
+# Plotting
 
     def PlotSystem(self,x=0,y=0):
         ax = plt.gca()
@@ -421,6 +272,9 @@ class Orbit(object):
         min_r = min(norm_list)
         e = (max_r- min_r)/(max_r + min_r)
         print("Eccentricity ala rmaxmin: {0:2.3f}".format(e))
+        a = (abs(max_r)+abs(min_r))/2.
+        print("A = {0:1.8f}".format(a) )
+        return a
 
     def Calc_Extentricity_Vector(self, r0 , v0):
         # appending a 3. dimension for the cross product
@@ -431,7 +285,14 @@ class Orbit(object):
         e = norm(e_vec)
         print("Another way e = {0:.3f}".format(e))
 
-#
+
+    def semimajor_axis(self):
+        x_min = min(self.r[:,0])
+        x_max = max(self.r[:,0])
+        a = (abs(x_max)+abs(x_min))/2.
+        print("Semimajor axis",a)
+        return a
+
     def displacement(self, r):
         #indexx = abs(r[1: ,1] - 0.).argmin()
         shift = 1
@@ -444,7 +305,7 @@ class Orbit(object):
         #r_perihelion = abs(min(r[:,0]))
         #print("\nThe perihelion seperation is %0.3f, compared to 0.967." % r_perihelion)
 
-
+# These are stil todo:
     def timestepPlot():
         plt.figure()
         plt.title('dt geplottet')
@@ -460,10 +321,29 @@ class Orbit(object):
     def Output():
         pass
 
+
 ################################################################################
 ################################# End of Class #################################
 ################################################################################
 
+
+def KeplersThird_Problemplot(a,T):
+    ax = plt.gca()
+    ax.cla()
+    plt.plot(np.linspace(0,10,10),np.linspace(0,10,10)*GM/(4*np.pi**2), alpha = 0.7)
+    plt.scatter(a,T, color = 'black')
+    plt.xlim(0.13,0.19)
+    plt.ylim(0.13,0.19)
+
+    plt.xlabel(r'$A$')
+    plt.ylabel(r'$T$')
+    plt.grid(linestyle=':',alpha=0.2)
+
+    ax.minorticks_on()
+    ax.tick_params(which='major', direction='in')#,direction='inout', length=10, width=2,)
+    ax.tick_params(which='minor', direction='in',color = '#0f0f0f50')#, length=5, width=2,)
+
+    plt.show()
 
 def main():
     params = {
@@ -476,11 +356,16 @@ def main():
     #v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
     r0 = r0mag*array([1,0])
     v0 = v0mag*array([0,1])
-    t = 0.3
-    #t = 0.37
-    newOrbit = Orbit(r0, v0, t)
+    #t = np.sqrt((0.5161)**3)
+    t = 0.37116165063121087
+    #t = 0.8
+    newOrbit = Orbit(r0, v0, t, 0.01)
     newOrbit.RungeKutta_adaptive(newOrbit.dt, newOrbit.err, newOrbit.tmax)
+    #E = 0
+    #(self, n, r, v, t, dt, acc, E):
+    #newOrbit.RungeKutta(2001, newOrbit.r, newOrbit.v,newOrbit.tmax, newOrbit.dt, acc, E)
     #print("nr of steps",len(newOrbit.r)-1)
+
 
     ############### Second Orbit
     v0mag = 1.3*np.pi/2 * AU/YR
@@ -488,10 +373,13 @@ def main():
     #v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
     r0 = r0mag*array([1,0])
     v0 = v0mag*array([0,1])
-    #t = 0.37
+    #t = np.sqrt((0.525)**3)
+    t = 0.3831331692562119
+    #t = 20
     newOrbit2 = Orbit(r0, v0, t)
     newOrbit2.RungeKutta_adaptive(newOrbit2.dt, newOrbit2.err, newOrbit2.tmax)
     #print("nr of steps",len(newOrbit.r)-1)
+
 
     ############### First Orbit
     v0mag = 2.*np.pi/2 * AU/YR
@@ -499,7 +387,9 @@ def main():
     #v0mag =  np.sqrt(GM/1* (1+e)/(1-e))
     r0 = r0mag*array([1,0])
     v0 = v0mag*array([0,1])
-    #t = 0.43
+    #t = np.sqrt((0.572)**3)
+    t = 0.4318659210832704
+    #t = 20
     newOrbit3 = Orbit(r0, v0, t)
     newOrbit3.RungeKutta_adaptive(newOrbit3.dt, newOrbit3.err, newOrbit3.tmax)
     #print("nr of steps",len(newOrbit.r)-1)
@@ -526,13 +416,29 @@ def main():
 
 
     # For the Excentisity !
-    newOrbit.Calc_Extentricity_Vector(newOrbit.r[-2],newOrbit.v[-2])
+    newOrbit2.Calc_Extentricity_Vector(newOrbit.r[-2],newOrbit.v[-2])
+    newOrbit.Calc_Extentricity_Vector(newOrbit2.r[-2],newOrbit2.v[-2])
+    newOrbit3.Calc_Extentricity_Vector(newOrbit3.r[-2],newOrbit3.v[-2])
     #newOrbit.displacement(newOrbit.r)
     newOrbit.CalcExcentricity(newOrbit.r)
+    newOrbit2.CalcExcentricity(newOrbit2.r)
+    newOrbit3.CalcExcentricity(newOrbit3.r)
 
+
+# To create the KEpler plot!!
+    a0 = newOrbit.semimajor_axis()
+    a1 = newOrbit2.semimajor_axis()
+    a2 = newOrbit3.semimajor_axis()
+    print("AAA",a0)
+    #aas = np.array([0.51646,0.52,0.57])**3
+    aas = np.array([a0, a1, a2])**3
+    print(np.sqrt((a0)**3),np.sqrt((a1)**3),np.sqrt((a2)**3))
+    Tts = np.array([0.37116165063121087, 0.3831331692562119, 0.4318659210832704])**2
+    #KeplersThird_Problemplot(aas, Tts)
+###########################################################################################
     #Energie
-    newOrbit.EnergyPlot()
+    #newOrbit.EnergyPlot()
     #newOrbit2.EnergyPlot()
-    plt.show()
+    #plt.show()
 
 main()

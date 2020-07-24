@@ -1,0 +1,219 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  IEEEsample2e.tex %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% changes for IEEEtrans.cls marked with !PN
+%% except all occ. of IEEEtran.sty changed IEEEtran.cls
+%%%%%%%%%%                                                       %%%%%%%%%%%%%
+%%%%%%%%%%    More information: see the header of IEEEtran.cls   %%%%%%%%%%%%%
+%%%%%%%%%%                                                       %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[journal]{IEEEtran} %!PN
+%\documentclass[12pt,draft,onecolumn]{ieeetran} %!PN
+%\documentstyle[twocolumn]{IEEEtran}
+%\documentstyle[12pt,twoside,draft]{IEEEtran}
+%\documentstyle[9pt,twocolumn,technote,twoside]{IEEEtran}
+%\usepackage{epsfig}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+
+\usepackage[english]{babel}
+\usepackage[ansinew]{inputenc}
+
+\usepackage{microtype,etex,listings,color,parskip}
+\usepackage[margin=2cm]{geometry}
+\usepackage{hyperref}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\usepackage{amsmath}
+\usepackage{float}
+%New colors defined below
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+\definecolor{codegreen}{rgb}{0,0.4,0.3}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{keywordcolour}{rgb}{0.1,0.3,0.7}
+
+%Code listing style named "mystyle"
+\lstdefinestyle{Python}{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{backcolour},
+  commentstyle=\color{codegreen},
+  keywordstyle=\color{keywordcolour},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple},
+  breakatwhitespace=false,         
+  breaklines=true,                 
+  captionpos=b,                    
+  keepspaces=true,                 
+  numbers=left,                    
+  numbersep=5pt,
+  showspaces=false,                
+  showstringspaces=false,
+  showtabs=false,                  
+  tabsize=2
+}
+
+%"mystyle" code listing set
+\lstset{style=Python}
+
+%sets where to find graphics
+\graphicspath{%
+	{figs/}%
+}
+
+%maybe has to be changes
+\usepackage{siunitx}
+\sisetup{scientific-notation = true}%
+%\sisetup{
+%	locale = EN ,
+%	per-mode = symbol,
+%	separate-uncertainty,
+%	range-phrase = --
+%}
+
+\setlength {\marginparwidth }{2cm}\usepackage{todonotes}
+
+\usepackage{physics}
+
+\newcommand{\mtx}[1]{\mathrm{#1}} %
+
+% https://gertingold.github.io/pythonnawi/graphics.html
+% https://docs.python-guide.org/writing/style/
+%%%%%%%%%%%%%%%%%
+% Here it begins
+%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\title{Transmonqubit model}
+%
+\author{Tobias Rudolph (Mat.Nr.407229) \\ \href{mailto:tobias.rudolph@rwth-aachen.de}{tobias.rudolph@rwth-aachen.de} \\
+Date: 10.07.2020
+}
+%\thanks{The authors are with RWTH Aachen University, 52074 Aachen, Germany. Copyright (c) 2013 IEEE. Personal use of this material is permitted.
+%However, permission to use this material for any other purposes must be
+%obtained from the IEEE by sending a request to pubs-permissions@ieee.org.}}
+
+\maketitle
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+
+\end{abstract}
+
+%\begin{IEEEkeywords}
+%...,...,... .
+%\end{IEEEkeywords}
+
+
+\section{Introduction}\label{intro}
+\IEEEPARstart{Q}{antum} Computing is the real shit at the moment. Nothing else like quantem computing bla bal therefore a realization is nessersarry and theser are the quibits a quantum state system. 
+
+
+For this quantum state the Hamiltonian can be described.
+
+The time evolution of a system can be described as :
+$$
+i\hbar \frac{\partial}{\partial t} |\psi\rangle=H|\psi\rangle
+$$
+
+describe briefly the problem you are modeling and simulating (write in complete sentences)
+$$ H_{\mtx{Model}} = H_{\mtx{Transmon}} + H_{\mtx{Drive}}$$
+
+$$ \hat H_{\mtx{Transmon}}= \omega\hat a^\dagger\hat a+ \frac{\alpha}{2}\hat a^\dagger\hat a\left(\hat a^\dagger\hat a - I\right)  $$
+
+$$ \hat H_{\mtx{Drive}}= Pulse(t)\left(\hat a^\dagger+\hat a\right) $$
+
+
+$$\hbar\omega\left(\hat a^\dagger\hat a+\frac{1}{2}\right) =\hbar\omega\left(\hat n+\frac{1}{2}\right) $$
+
+\begin{align}\hat a\left|n\right\rangle&:=\sqrt{n}\,\left|n-1\right\rangle\\
+\hat a^\dagger\left|n\right\rangle&:=\sqrt{n+1}\,\left|n+1\right\rangle
+\end{align}
+
+
+\begin{align}
+\hat a^\dagger \hat a\left|n\right\rangle&:=\sqrt{n}\,\left|n-1\right\rangle\\
+\hat a\left|n\right\rangle&:=\sqrt{n}\,\left|n-1\right\rangle\\
+\hat a^\dagger\left|n\right\rangle&:=\sqrt{n+1}\,\left|n+1\right\rangle
+\end{align}
+
+$$
+\mathbf{c}(t)=e^{-i\mathbf{H}t/\hbar} \mathbf{c}_0=\mathbf{U}(t)\mathbf{c}_0
+$$
+
+
+$$
+\mathbf{c}_0= \begin{pmatrix} 1\\ 0 \end{pmatrix} 
+$$
+
+
+$$
+\mathbf{H} = \begin{pmatrix} 1 & 0\\ 0 & E_2 \end{pmatrix}
+$$
+
+$$
+\mathbf{U}(t) = e^{-i\mathbf{H}t/\hbar} = \begin{pmatrix} e^{-iE_1t/\hbar} & 0\\ 0 & e^{-iE_2t/\hbar} \end{pmatrix}
+$$
+
+$$ \hat H=\hbar\omega\left(\hat a^\dagger\hat a+\frac{1}{2}\right) =\hbar\omega\left(\hat n+\frac{1}{2}\right) $$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Simulation model and method}
+
+Use the second order product formula approach to solve the time-dependent Schroedinger equation
+
+The model Hamiltonian has two parts: The first part describes the qubit
+The second part describes a time-dependent control drive
+
+describe briefly the problem you are modeling, as well as the simulation method.
+
+$P_i(t)=|c_i(t)|^2$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Simulation results}
+
+show figures (with figure captions) depicting the results
+Give a brief description of the results
+
+Do not forget to answer specified questions.
+
+answer the posed questions
+
+
+\section{Discussion}
+
+
+summarize your findings
+
+%To have the Appendix on a new page, but can also be deleted
+\clearpage
+\onecolumn
+\section*{Appendix}
+$$
+\sin x = \frac{\mathrm{e}^{\mathrm{i}x} - \mathrm{e}^{-\mathrm{i}x}}{2\mathrm{i}}, \quad \cos x = \frac{\mathrm{e}^{\mathrm{i}x} + \mathrm{e}^{-\mathrm{i}x}}{2}
+$$
+
+\url{https://www.fz-juelich.de/SharedDocs/Downloads/PGI/EN/SpringSchool/Lecture-Notes-Book-Form/Skriptbuch-2013.pdf?__blob=publicationFile}
+
+%\lstinputlisting{}
+
+\begin{thebibliography}{10}\footnotesize
+%\bibitem{test} J. Appenzeller, J. Knoch, V. Derycke, R. Martel, S. Wind and Ph, Avouris, \lq\lq Field-modulated carrier transport in carbon nanotube transistors\rq\rq, {\it Phys. Rev. Lett.}, {\bf 89}, 126801 (2002).
+
+\bibitem{Wessel} Prof. S. Wessel, Computational Physics, {\it Lecture Notes}
+\bibitem{Michielsen} Prof. K. Michielsen, Computational Physics, {\it Lecture Notes}
+
+\end{thebibliography}
+
+
+%\bibliography{thesis_refs}
+%\bibliographystyle{plain}
+
+
+
+
+\end{document}

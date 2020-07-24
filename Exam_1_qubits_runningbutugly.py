@@ -21,12 +21,15 @@ class Qubit(object):
     Takes omega and alpha and divides by 2pi
     """
     def __init__(self, tau, T_Sim, dim, omega, alpha):
+
         self.dim        = dim               # dimension
         self.tau        = tau               # time step
         self.T_Sim      = T_Sim             # time at which simulation ends
+
         # Time Grid vor simulation
         self.N          = int(ceil(self.T_Sim/self.tau))
         self.time_array = np.linspace(0,self.N,self.N+1) *self.tau
+
         # Creates the Matrix for ladder operator
         self.a          = np.diag(np.linspace(0, self.dim-1, self.dim))
         self.a          = np.sqrt(self.a)
@@ -35,37 +38,47 @@ class Qubit(object):
         adegga_a        = np.dot(self.a_degga, self.a)
         self.I          = np.identity(self.dim) # Identity used in H_Trans
 
-        self.omega      = omega*2*np.pi     # Parameter for H_Transmon
-        self.alpha      = alpha*2*np.pi     # Parameter for H_Transmon
+        # Parameter for H_Transmon
+        self.omega      = omega*2*np.pi
+        self.alpha      = alpha*2*np.pi
+
         # Calculates the Transmon Hamiltionion
-        self.H_Trans    = self.omega * adegga_a + self.alpha/2. * ( dot(adegga_a, adegga_a)-dot(adegga_a,self.I))
+        self.H_Trans    = self.omega*adegga_a+self.alpha/2.*\
+                            (dot(adegga_a,adegga_a)-dot(adegga_a,self.I))
+
         # Defines the exponential of it for the TimeOperatoor
         self.expH_Trans = expm(-1j * self.tau * self.H_Trans)
 
+        # Container of the Time evolution operator
+        self.U          = np.zeros((self.dim,self.dim), dtype = complex)
+
         # Container of the states
-        self.B          = np.zeros((dim,dim), dtype=complex)  #Container of vectors
+        self.B          = np.zeros((dim,dim), dtype=complex)
+
         # Pauli Matrixes
         self.sigma_x    = array([[0, 1],    [1, 0]])
         self.sigma_y    = array([[0, -1j],  [1j, 0]])
         self.sigma_z    = array([[1, 0],    [0, -1]])
+
         # List for the time evolution of pauli matrizes
         self.X = []
         self.Y = []
         self.Z = []
 
-        # Analytic for 2D !
-        #self.expH_Trans = np.array([[1., 0.], [0., np.exp(complex(0, -self.tau*self.omega))]])
-        #self.expH_Trans = np.array([[1,0],[0,np.exp(-1j*omega)]])
-
-        # Container for the Drive Hamiltonian
-        self.H_Drive    = np.zeros((self.dim,self.dim), dtype = complex)
-        self.U          = np.zeros((self.dim,self.dim), dtype = complex)
-
+        # parameters for the drive Hamiltonian (Task 2)
         self.Pulse_0    = np.pi/2.
         self.beta       = np.pi/self.T_Sim
         self.Pulse      = np.pi/2.
 
+        # Container for the Drive Hamiltonian
+        self.H_Drive    = np.zeros((self.dim,self.dim), dtype = complex)
+
+        # Container for the leakage (Task 3)
         self.leakage = []
+
+        # Analytic for 2D !
+        #self.expH_Trans = np.array([[1., 0.], [0., np.exp(complex(0, -self.tau*self.omega))]])
+        #self.expH_Trans = np.array([[1,0],[0,np.exp(-1j*omega)]])
 
     def Initialize(self):
         # Define the set of eigenvektors
@@ -79,13 +92,13 @@ class Qubit(object):
         self.Psi_0 = self.B[1]
         self.Psi = self.Psi_0
 
-
     def CalcExpH1(self, t):
+        arg = self.Pulse*self.tau/2.
         mat =  np.zeros((self.dim,self.dim), dtype = complex)
         for i in range(self.dim - 1):
             if i % 2 == 0:
                 # Sqrt factor from a adegga
-                arg  = self.Pulse/2.*self.tau * np.sqrt(i+1)
+                arg *= np.sqrt(i+1)
                 c = np.cos(arg)
                 s = np.sin(arg)
                 mat[i, i] = c
@@ -96,38 +109,38 @@ class Qubit(object):
         #print('ExpK1 = ', mat)
         return mat
 
-
     def CalcExpH2(self, t):
         arg = self.Pulse*self.tau/2.
         mat =  np.zeros((self.dim,self.dim), dtype = complex)
         for i in range(self.dim - 1):
             if i % 2 == 1:
+                # Sqrt factor from a adegga
                 arg *= np.sqrt(i+1)
-                c = np.cos(arg)
-                s = np.sin(arg)
-                mat[i, i] = c
-                mat[i+1, i+1] = c
-                mat[i+1, i] = complex(0, s)
-                mat[i, i+1] = complex(0, s)
+                c   = np.cos(arg)
+                s   = np.sin(arg)
+                mat[i, i]       = c
+                mat[i+1, i+1]   = c
+                mat[i+1, i]     = complex(0, s)
+                mat[i, i+1]     = complex(0, s)
         mat[0, 0] = 1
         if self.dim == 2:
             mat[-1, -1] = 1
-        ##print('ExpK2 = ', mat)
         return mat
 
     def PulseFunction(self, t):
-        return self.Pulse_0 * self.beta * np.sin(self.beta * t) * np.cos(self.omega * t)
+        return self.Pulse_0*self.beta *np.sin(self.beta*t)*np.cos(self.omega*t)
 
-    def CalcTimeoperator(self, t, Hamil):
-        self.Pulse = self.PulseFunction(t)
+    def UpdateTimeoperator(self, t, Hamil):
+        self.Pulse  = self.PulseFunction(t)
         # here the H matrixes have to be calculated
-        ExpH1 = self.CalcExpH1(t)
-        ExpH2 = self.CalcExpH2(t)
-        self.U = np.matmul(ExpH1, np.matmul(ExpH2, np.matmul(self.expH_Trans, np.matmul(ExpH2, ExpH1))))
+        ExpH1       = self.CalcExpH1(t)
+        ExpH2       = self.CalcExpH2(t)
+        self.U      = np.matmul(ExpH1, np.matmul(ExpH2, np.matmul(self.expH_Trans,
+                        np.matmul(ExpH2, ExpH1))))
         return self.U
-        #print(self.U)
 
-    def CalcTimeoperator_2D(self, t, Hamil):
+    # Explicite Timeoperators for comparing
+    def UpdateTimeoperator_2D(self, t, Hamil):
         Hamil = self.expH_Trans
         P = self.PulseFunction(t)
         a = np.cos(self.tau*P/2.)
@@ -138,7 +151,7 @@ class Qubit(object):
 
         return np.matmul(ExpB, np.matmul(Hamil, ExpB))
 
-    def CalcTimeoperator_3D(self, t, Hamil):
+    def UpdateTimeoperator_3D(self, t, Hamil):
         Hamil = self.expH_Trans
         P = self.PulseFunction(t)
         a = np.cos(self.tau*P/2.)
@@ -151,34 +164,28 @@ class Qubit(object):
         return np.matmul(ExpH1, np.matmul(ExpH2, np.matmul(self.expH_Trans, np.matmul(ExpH2, ExpH1))))
 
     def RunStep(self, t):
-        self.U = self.CalcTimeoperator(t, self.expH_Trans)
-        #self.U = self.CalcTimeoperator_3D(t, self.expH_Trans)
+        # Update of timeoperator
+        self.U      = self.UpdateTimeoperator(t, self.expH_Trans)
+
         # Timeevolution of spi for one step
-        self.Psi = np.matmul(self.U, self.Psi)
-        #self.Psi = U.dot(self.Psi) # not in use
+        self.Psi    = np.matmul(self.U, self.Psi)
 
         # Cacluates the time evolution of the pauli matrix
-        #self.X.append( np.dot(np.dot(np.conj(self.Psi.T),self.sigma_x),self.Psi) )
-        #self.Y.append( np.dot(np.dot(np.conj(self.Psi.T),self.sigma_y),self.Psi) )
-        #self.Z.append( np.dot(np.dot(np.conj(self.Psi.T),self.sigma_z),self.Psi) )
-        #self.Z.append( np.matmul(np.matmul(np.conj(self.Psi.T),self.sigma_z),self.Psi) )
+        c0_c1       = (self.Psi[0],self.Psi[1])
+        c0_c1_trans = (np.conj(self.Psi[0]),np.conj(self.Psi[1]))
+        self.X.append( np.dot(np.dot(c0_c1_trans,self.sigma_x),c0_c1) )
+        self.Y.append( np.dot(np.dot(c0_c1_trans,self.sigma_y),c0_c1) )
+        self.Z.append( np.dot(np.dot(c0_c1_trans,self.sigma_z),c0_c1) )
 
-        #print(self.X)
-        # Another way to calculate the Z pauli matrix
-        #self.X.append( np.dot(np.dot(np.conj(self.Psi.T),self.sigma_x),self.Psi) )
-        #self.Y.append( np.dot(np.dot(np.conj(self.Psi.T),self.sigma_y),self.Psi) )
-        self.Z.append( np.dot(np.dot((np.conj(self.Psi[0]),np.conj(self.Psi[1])),self.sigma_z),(self.Psi[0],self.Psi[1])) )
-        #print(self.X)
-
+        # Computes LEakage and appends
+        self.leakage.append(self.ComputeLeakage())
 
     def TimeEvaluation(self):
         # Initialize the system
         self.Initialize()
-
         # runs in time over the time array (until T_Sim)
         for timestep in self.time_array:
              self.RunStep(timestep)
-             self.leakage.append(self.ComputeLeakage())
         #     #print(timestep)
 
         #Saves the data or plots it
@@ -188,6 +195,13 @@ class Qubit(object):
 
         #self.PlotOnlyZ()
 
+    def ComputeLeakage(self):
+        p0 = Probability(self.Psi[0])
+        p1 = Probability(self.Psi[1])
+        return (1.-p0-p1)
+
+################################################################################
+#From here its Plotting and Output
 
     def Plot_Pulseform(self):
         fig, ax = plt.subplots()
@@ -252,18 +266,11 @@ class Qubit(object):
         ax.tick_params(which='minor', direction='in',color = '#0f0f0f50')#, length=5, width=2,)
 
 
-
     def PrintAll(self):
         print("a\n",self.a,"\nadegga\n",self.a_degga,"\nI\n",self.I)
         print(self.B[0])
         print(self.B[1])
         print(self.Psi_0)
-
-    def ComputeLeakage(self):
-        p0 = Probability(self.Psi[0])
-        p1 = Probability(self.Psi[1])
-        return (1.-p0-p1)
-#    def calculate_Propability
 
     def PlotLeakage(self):
         fig, ax = plt.subplots()
